@@ -10,18 +10,25 @@ export const webSearch = tool({
     query: z.string().min(1).max(100).describe('The search query'),
   }),
   execute: async ({ query }) => {
-    const { results } = await exa.search(query, {
-      contents: {
-        text: true,
-      },
-      numResults: 3,
-    });
+    try {
+      console.log('Searching the web for:', query);
+      const { results } = await exa.search(query, {
+        contents: {
+          text: true,
+        },
+        numResults: 3,
+      });
+      console.log('Search results:', results);
 
-    return results.map(result => ({
-      title: result.title,
-      url: result.url,
-      content: result.text?.slice(0, 1000) || '',
-      publishedDate: result.publishedDate,
-    }));
+      return results.map(result => ({
+        title: result.title,
+        url: result.url,
+        content: result.text?.slice(0, 1000) || '',
+        publishedDate: result.publishedDate,
+      }));
+    } catch (error) {
+      console.error('Error searching the web:', error);
+      return [];
+    }
   },
 });

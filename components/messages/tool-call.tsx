@@ -1,5 +1,5 @@
 import { ToolCallPart, ToolResultPart } from "ai";
-import { Book, Globe, Search, Presentation } from "lucide-react";
+import { Book, Globe, Search, Presentation, Wrench } from "lucide-react";
 import { Shimmer } from "../ai-elements/shimmer";
 
 export interface ToolDisplay {
@@ -7,11 +7,10 @@ export interface ToolDisplay {
     call_icon: React.ReactNode;
     result_label: string;
     result_icon: React.ReactNode;
-    formatArgs?: (input: unknown) => string;
+    formatArgs?: (toolName: string, input: unknown) => string;
 };
 
-// Tool-specific argument formatters
-function formatWebSearchArgs(input: unknown): string {
+function formatWebSearchArgs(_: string, input: unknown): string {
     try {
         if (typeof input !== 'object' || input === null) {
             return "";
@@ -23,85 +22,7 @@ function formatWebSearchArgs(input: unknown): string {
     }
 }
 
-function formatReadSlideLectureArgs(input: unknown): string {
-    try {
-        if (typeof input !== 'object' || input === null) {
-            return "";
-        }
-        const args = input as Record<string, unknown>;
-        if (args.class_no) {
-            return `Class ${args.class_no}`;
-        }
-        return "";
-    } catch {
-        return "";
-    }
-}
-
-function formatReadNotebookLectureArgs(input: unknown): string {
-    try {
-        if (typeof input !== 'object' || input === null) {
-            return "";
-        }
-        const args = input as Record<string, unknown>;
-        if (args.class_no) {
-            return `Class ${args.class_no}`;
-        }
-        return "";
-    } catch {
-        return "";
-    }
-}
-
-function formatReadAssignedReadingArgs(input: unknown): string {
-    try {
-        if (typeof input !== 'object' || input === null) {
-            return "";
-        }
-        const args = input as Record<string, unknown>;
-        if (args.class_no) {
-            return `Class ${args.class_no}`;
-        }
-        return "";
-    } catch {
-        return "";
-    }
-}
-
 const TOOL_DISPLAY_MAP: Record<string, ToolDisplay> = {
-    readNotebookLecture: {
-        call_label: "Reading lecture notebook",
-        call_icon: <Book className="w-4 h-4" />,
-        result_label: "Read lecture notebook",
-        result_icon: <Book className="w-4 h-4" />,
-        formatArgs: formatReadNotebookLectureArgs,
-    },
-    readSlideLecture: {
-        call_label: "Reading slide lecture",
-        call_icon: <Presentation className="w-4 h-4" />,
-        result_label: "Read slide lecture",
-        result_icon: <Presentation className="w-4 h-4" />,
-        formatArgs: formatReadSlideLectureArgs,
-    },
-    readSyllabus: {
-        call_label: "Reading syllabus",
-        call_icon: <Book className="w-4 h-4" />,
-        result_label: "Read syllabus",
-        result_icon: <Book className="w-4 h-4" />,
-    },
-    readAssignment: {
-        call_label: "Reading assignment",
-        call_icon: <Book className="w-4 h-4" />,
-        result_label: "Read assignment",
-        result_icon: <Book className="w-4 h-4" />,
-    },
-    readAssignedReading: {
-        call_label: "Reading assigned reading",
-        call_icon: <Book className="w-4 h-4" />,
-        result_label: "Read assigned reading",
-        result_icon: <Book className="w-4 h-4" />,
-        formatArgs: formatReadAssignedReadingArgs,
-    },
     webSearch: {
         call_label: "Searching the web",
         call_icon: <Search className="w-4 h-4" />,
@@ -111,7 +32,7 @@ const TOOL_DISPLAY_MAP: Record<string, ToolDisplay> = {
     },
 };
 
-const DEFAULT_TOOL_DISPLAY: ToolDisplay = { call_label: "Searching", call_icon: <Globe className="w-4 h-4" />, result_label: "Searched", result_icon: <Globe className="w-4 h-4" /> };
+const DEFAULT_TOOL_DISPLAY: ToolDisplay = { call_label: "Using tool", call_icon: <Globe className="w-4 h-4" />, result_label: "Used tool", result_icon: <Wrench className="w-4 h-4" /> };
 
 function extractToolName(part: ToolCallPart | ToolResultPart): string | undefined {
     const partWithType = part as unknown as { type?: string; toolName?: string };
@@ -128,12 +49,10 @@ function extractToolName(part: ToolCallPart | ToolResultPart): string | undefine
 }
 
 function formatToolArguments(toolName: string, input: unknown, toolDisplay?: ToolDisplay): string {
-    // Use tool-specific formatter if available
     if (toolDisplay?.formatArgs) {
-        return toolDisplay.formatArgs(input);
+        return toolDisplay.formatArgs(toolName, input);
     }
 
-    // Fallback to default behavior
     try {
         if (typeof input !== 'object' || input === null) {
             return String(input);
@@ -154,9 +73,6 @@ export function ToolCall({ part }: { part: ToolCallPart }) {
     const toolName = extractToolName(part);
     const toolDisplay = toolName ? (TOOL_DISPLAY_MAP[toolName] || DEFAULT_TOOL_DISPLAY) : DEFAULT_TOOL_DISPLAY;
     const formattedArgs = formatToolArguments(toolName || "", input, toolDisplay);
-
-    console.log(toolName);
-    console.log(toolDisplay);
 
     return (
         <div className="flex items-center gap-2">
